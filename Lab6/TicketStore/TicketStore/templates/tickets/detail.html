@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ticket.ticket_name_of_event}}{% endblock %}
+
+{% block content %}
+
+  <h2>{{ticket.ticket_name_of_event}}</h2>
+
+  <p>Price: {{ticket.ticket_price}} grn;</p>
+
+  {% if ticket.ticket_status == 0 %}
+    <p>Status: Bought;</p>
+  {% endif %}
+
+  {% if ticket.ticket_status == 1 %}
+    <p>Status: Booked;</p>
+  {% endif %}
+
+  {% if ticket.ticket_status == 2 %}
+      <p>Status: Available;</p>
+  {% endif %}
+
+  <em>Data of event: {{ticket.ticket_date_of_event}}</em>
+
+  <form action="{% url 'book_ticket' ticket.id %}">
+    <button type="submit">Book ticket</button>
+  </form>
+  <form action="{% url 'buy_ticket' ticket.id %}">
+    <button type="submit">Buy ticket</button>
+  </form>
+  <form action="{% url 'unbook_ticket' ticket.id %}">
+    <button type="submit">Unbook ticket</button>
+  </form>
+{% endblock %}

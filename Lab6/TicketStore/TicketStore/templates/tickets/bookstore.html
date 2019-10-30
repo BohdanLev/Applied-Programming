@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ticket.ticket_name_of_event}}{% endblock %}
+
+{% block content %}
+
+  <form action="{% url 'book' ticket.id %}" method="post">
+    {% csrf_token %}
+    <input type="text" required="" placeholder = "Your name" name="name">
+    <input type="text" required="" placeholder = "Number of Phone" name="phone">
+    <button type="submit">Book</button>
+  </form>
+{% endblock %}

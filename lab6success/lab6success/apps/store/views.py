@@ -1,45 +1,33 @@
-
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, Http404
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect, csrf_exempt
-from .models import Ticket,TicketStatus, User
+from .models import Ticket, TicketStatus, User, Event
 from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.models import User as usr
 import json
+
 
 @csrf_protect
 @csrf_exempt
 def index(request):
     return HttpResponse("Done")
 
-
-@csrf_protect
-@csrf_exempt
-def new_ticket(request):
-    if request.method == "POST":
-        json_data = json.loads(request.body.decode("utf-8"))
-        name_of_event = json_data['nameOfEvent']
-        date = json_data['date']
-        ticket_price = json_data['ticketPrice']
-        status = json_data['status']
-        available_status = ["bought", "booked", "available"]
-        if status not in available_status:
-            return HttpResponseBadRequest()
-        Ticket.objects.create(ticket_name_of_event=name_of_event, ticket_date_of_event=date, ticket_price=ticket_price,
-                              ticket_status=TicketStatus.statusToInt(status),ticket_user=None,)
-    return HttpResponse("Done")
-
-
 @csrf_protect
 @csrf_exempt
 def get_all_tickets(request):
-    if(request.method == "GET"):
+    if (request.method == "GET"):
         try:
             tickets = Ticket.objects.filter(ticket_status=TicketStatus.AVAILABLE)
         except:
             return HttpResponseBadRequest()
         all = {}
         for ticket in tickets:
-            all[str(ticket.id)] = {"nameOfEvent": ticket.ticket_name_of_event,"dateOfEvent": ticket.ticket_date_of_event,"price": ticket.ticket_price,"status": TicketStatus.intToStatus(ticket.ticket_status)}
+            all[str(ticket.id)] = {"nameOfEvent": ticket.ticket_event.name_of_event,
+                                   "dateOfEvent": ticket.ticket_event.date_of_event, "price": ticket.ticket_price,
+                                   "status": TicketStatus.intToStatus(ticket.ticket_status)}
         return JsonResponse(all)
+
 
 @csrf_protect
 @csrf_exempt
@@ -58,7 +46,7 @@ def order_ticket(request):
         try:
             ticket = Ticket.objects.get(id=id)
         except:
-            raise Http404("Error id")
+            raise HttpResponseBadRequest("Error id")
         if ticket.ticket_status == TicketStatus.BOUGHT:
             return HttpResponseBadRequest()
         if ticket.ticket_status == TicketStatus.BOOKED:
@@ -115,7 +103,7 @@ def cancel_book_ticket(request):
         try:
             ticket = Ticket.objects.get(id=id)
         except:
-            raise Http404("Error id")
+            raise HttpResponseBadRequest("Error id")
         if ticket.ticket_status == TicketStatus.BOUGHT:
             return HttpResponseBadRequest()
         if ticket.ticket_status == TicketStatus.BOOKED and ticket.ticket_user != user:
@@ -125,15 +113,17 @@ def cancel_book_ticket(request):
         ticket.save()
         return HttpResponse("Success")
 
+
 @csrf_protect
 @csrf_exempt
-def get_ticket_id(request,ticket_id):
+def get_ticket_id(request, ticket_id):
     if request.method == "GET":
         try:
-            ticket = Ticket.objects.get(id = int(ticket_id))
+            ticket = Ticket.objects.get(id=int(ticket_id))
         except:
             return HttpResponseBadRequest()
-        return JsonResponse({"nameOfEvent": ticket.ticket_name_of_event,"dateOfEvent": ticket.ticket_date_of_event,"price": ticket.ticket_price,"status": TicketStatus.intToStatus(ticket.ticket_status)})
+        return JsonResponse({"Name of event": ticket.ticket_event.name_of_event,"date": ticket.ticket_event.date_of_event, "price": ticket.ticket_price,
+                             "status": TicketStatus.intToStatus(ticket.ticket_status)})
     return HttpResponse("Good")
 
 
@@ -158,11 +148,11 @@ def user_get_all_tickets(request):
     all = {}
     i = 1
     for ticket in tickets:
-        all[str(i)] = {"id": ticket.id, "nameOfEvent": ticket.ticket_name_of_event, "dateOfEvent": ticket.ticket_date_of_event,
-                               "price": ticket.ticket_price, "status": TicketStatus.intToStatus(ticket.ticket_status)}
-        i+=1
+        all[str(i)] = {"id": ticket.id, "nameOfEvent": ticket.ticket_event.name_of_event,
+                       "dateOfEvent": ticket.ticket_event.date_of_event,
+                       "price": ticket.ticket_price, "status": TicketStatus.intToStatus(ticket.ticket_status)}
+        i += 1
     return JsonResponse(all)
-
 
 @csrf_protect
 @csrf_exempt
@@ -203,3 +193,52 @@ def login_user(request):
                 return HttpResponse("You're logged in.")
             else:
                 return HttpResponseBadRequest()
+
+
+@csrf_protect
+@csrf_exempt
+def get_events(request):
+    if request.method == "GET":
+        try:
+            events = Event.objects.all()
+        except:
+            return HttpResponse("No available tickets")
+        all = {}
+        for event in events:
+            all[str(event.id)] = {"nameOfEvent": event.name_of_event,
+                                  "dateOfEvent": event.date_of_event}
+        return JsonResponse(all)
+
+
+@csrf_protect
+@csrf_exempt
+def get_event_tickets(request, event):
+    if request.method == "GET":
+        try:
+            event = Event.objects.get(name_of_event=event)
+            tickets = Ticket.objects.filter(ticket_event=event)
+        except:
+            return HttpResponseBadRequest()
+        all = {}
+        for ticket in tickets:
+            all[str(ticket.id)] = {"nameOfEvent": event.name_of_event,
+                                   "dateOfEvent": event.date_of_event,
+                                   "price": ticket.ticket_price,
+                                   "status": TicketStatus.intToStatus(ticket.ticket_status)}
+        return JsonResponse(all)
+
+
+@csrf_protect
+@csrf_exempt
+def add_event(request):
+    try:
+        json_data = json.loads(request.body.decode("utf-8"))
+        name_of_event = json_data['name']
+        date_of_event = json_data['date']
+    except:
+        return HttpResponseBadRequest()
+    if request.method == "POST":
+        Event.objects.create(name_of_event=name_of_event, date_of_event=date_of_event)
+        event = Event.objects.get(name_of_event=name_of_event, date_of_event=date_of_event)
+        event.add_tickets(100, 250)
+    return HttpResponse("Success")

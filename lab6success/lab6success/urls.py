@@ -23,4 +23,5 @@ urlpatterns = [
     path('Ticket/', include('store.urls')),
     path('user/',include('store.urls')),
     path('store/',include('store.urls')),
+    path('events/',include('store.urls')),
 ]

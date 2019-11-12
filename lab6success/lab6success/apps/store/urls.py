@@ -19,8 +19,6 @@ from . import views
 
 urlpatterns = [
     path('done/', views.index, name='index'),
-    path('', views.new_ticket, name='new_ticket'),
-    # path('',views.get_ticketId,name='get_ticketId'),
     path('register/', views.register_user, name='register_user'),
     path('login/', views.login_user, name='login_user'),
     path('get/<ticket_id>/', views.get_ticket_id, name='get_ticket_id'),
@@ -29,4 +27,7 @@ urlpatterns = [
     path('book_ticket/', views.book_ticket, name='book_ticket'),
     path('cancel_book_ticket/',views.cancel_book_ticket,name='cancel_book_ticket'),
     path('get_all_tickets/',views.user_get_all_tickets,name='user_get_all_tickets'),
+    path('add_event/',views.add_event,name = 'add_event'),
+    path('all/',views.get_events,name = 'get_events'),
+    path('<str:event>/tickets/',views.get_event_tickets,name='get_event_tickets')
 ]

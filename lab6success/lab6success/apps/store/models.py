@@ -36,10 +36,20 @@ class TicketStatus(enum.Enum):
             return "available"
 
 
+class Event(models.Model):
+    name_of_event = models.CharField('Name of event', max_length = 200,unique=True)
+    date_of_event = models.DateTimeField('Date of event')
+
+    def add_tickets(self,number_of_tickets,price):
+        for i in range(number_of_tickets):
+            Ticket.objects.create(ticket_price = price,ticket_status = TicketStatus.AVAILABLE,ticket_event = self)
+
+
+
 class Ticket(models.Model):
-    ticket_name_of_event = models.CharField('Name of event', max_length=200)
-    ticket_date_of_event = models.DateTimeField('Date of event')
     ticket_price = models.IntegerField()
     ticket_status = enum.EnumField(TicketStatus, default=TicketStatus.AVAILABLE)
-    ticket_user = models.ForeignKey(User, on_delete = models.CASCADE,null=True)
+    ticket_user = models.ForeignKey(User, on_delete = models.SET_NULL,null=True)
+    ticket_event = models.ForeignKey(Event,on_delete = models.CASCADE)
+
 
